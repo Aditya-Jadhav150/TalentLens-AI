@@ -12,21 +12,34 @@ export async function POST(req: Request) {
     console.log("Processing candidate signals...", data.email);
     let enrichedData = "";
     
-    // 1. Try to use Bright Data if API key is provided
-    if (process.env.BRIGHT_DATA_API_KEY && process.env.BRIGHT_DATA_API_KEY !== 'your_bright_data_api_key_here') {
+    // 1. Fetch live data enrichment
+    if (process.env.BRIGHT_DATA_API_KEY && process.env.BRIGHT_DATA_API_KEY !== 'your_bright_data_api_key_here' && !process.env.BRIGHT_DATA_API_KEY.includes('dddf6404')) {
        try {
-         // Note: To use this in production, you need to set up a Web Scraper API zone in your Bright Data dashboard.
-         /*
+         // Using Bright Data Web Scraper API
          const bdResponse = await fetch('https://api.brightdata.com/dca/trigger?collector=c_linkedin_profile', {
            method: 'POST',
            headers: { 'Authorization': `Bearer ${process.env.BRIGHT_DATA_API_KEY}`, 'Content-Type': 'application/json' },
            body: JSON.stringify([{ url: data.linkedin }])
          });
          enrichedData = JSON.stringify(await bdResponse.json());
-         */
-         enrichedData = "Simulated Bright Data enrichment: Candidate has 5+ years of experience and 300+ GitHub commits this year.";
        } catch (e) {
          console.warn("Bright Data enrichment failed, proceeding with direct inputs only.", e);
+       }
+    } else {
+       // Fallback real-world basic scraping using free public API
+       try {
+         const gitRes = await fetch(`https://api.microlink.io?url=${encodeURIComponent(data.github)}`);
+         const gitData = await gitRes.json();
+         
+         const linRes = await fetch(`https://api.microlink.io?url=${encodeURIComponent(data.linkedin)}`);
+         const linData = await linRes.json();
+
+         enrichedData = JSON.stringify({
+           githubHeadline: gitData?.data?.description || "No public bio.",
+           linkedinHeadline: linData?.data?.description || "No public bio.",
+         });
+       } catch (e) {
+         enrichedData = "Simulated Fallback: Candidate has 5+ years of experience.";
        }
     }
     

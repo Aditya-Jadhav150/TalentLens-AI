@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-type Message = { id: string; role: "ai" | "candidate"; content: string; };
+type Message = { id: string; role: "ai" | "candidate"; content: string; isAgentAda?: boolean; };
 
 export default function InterviewPage() {
   const params = useParams();
@@ -20,11 +20,56 @@ export default function InterviewPage() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [interviewComplete, setInterviewComplete] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = true;
+
+        recognitionRef.current.onresult = (event: any) => {
+          let currentTranscript = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          setInput(currentTranscript);
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+          console.error("Speech recognition error", event.error);
+          setIsListening(false);
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+        };
+      }
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      if (!recognitionRef.current) {
+        alert("Speech recognition is not supported in this browser. Try Chrome.");
+        return;
+      }
+      setInput("");
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +91,15 @@ export default function InterviewPage() {
       if (data.success) {
         const updatedMessages = [...messages, userMessage, data.message];
         setMessages(updatedMessages);
+
+        if ('speechSynthesis' in window) {
+           const utterance = new SpeechSynthesisUtterance(data.message.content);
+           const voices = window.speechSynthesis.getVoices();
+           const preferredVoice = voices.find(v => v.name.includes("Google") || v.lang.includes("en-US"));
+           if (preferredVoice) utterance.voice = preferredVoice;
+           utterance.rate = 1.05;
+           window.speechSynthesis.speak(utterance);
+        }
         if (data.isComplete) {
           setInterviewComplete(true);
           if (typeof window !== "undefined") {
@@ -86,15 +140,21 @@ export default function InterviewPage() {
       <div className="flex-1 bg-slate-50 border border-slate-200 rounded-3xl p-6 overflow-y-auto mb-6 flex flex-col space-y-6 scrollbar-hide">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === "candidate" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] rounded-3xl p-5 ${msg.role === "candidate" ? "bg-slate-900 text-white rounded-tr-sm shadow-md" : "bg-white text-slate-800 rounded-tl-sm border border-slate-200 shadow-sm"}`}>
+            <div className={`max-w-[85%] rounded-3xl p-5 ${
+              msg.role === "candidate" ? "bg-slate-900 text-white rounded-tr-sm shadow-md" : 
+              msg.isAgentAda ? "bg-amber-50 text-amber-900 rounded-tl-sm border border-amber-200 shadow-sm" :
+              "bg-white text-slate-800 rounded-tl-sm border border-slate-200 shadow-sm"
+            }`}>
               {msg.role === "ai" && (
-                <div className="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                    <svg className="w-3 h-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className={`flex items-center gap-2 mb-3 border-b pb-2 ${msg.isAgentAda ? 'border-amber-200/50' : 'border-slate-100'}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${msg.isAgentAda ? 'bg-amber-200' : 'bg-blue-100'}`}>
+                    <svg className={`w-3 h-3 ${msg.isAgentAda ? 'text-amber-700' : 'text-blue-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">TalentLens Evaluator</span>
+                  <span className={`text-xs font-semibold tracking-wider uppercase ${msg.isAgentAda ? 'text-amber-700' : 'text-slate-500'}`}>
+                    {msg.isAgentAda ? 'Agent Ada (Risk Evaluator)' : 'TalentLens Evaluator'}
+                  </span>
                 </div>
               )}
               <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
@@ -124,6 +184,17 @@ export default function InterviewPage() {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); }
           }}
         />
+        <button 
+          type="button"
+          onClick={toggleListening}
+          disabled={interviewComplete || isTyping}
+          className={`absolute right-16 bottom-3 p-3 rounded-xl transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+          title="Toggle Voice Input"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        </button>
         <button 
           type="submit" 
           disabled={!input.trim() || interviewComplete || isTyping}

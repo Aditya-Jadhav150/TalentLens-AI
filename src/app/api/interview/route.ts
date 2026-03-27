@@ -10,40 +10,46 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { messages } = body;
-    const isFinishing = messages.length >= 8;
+    
+    // Rebuttal logic: 
+    // Messages 1-8 are standard interview
+    // Message 9 is Ada's challenge
+    // Message 10 is User's defense
+    // Message 11 is Ada's finale
+    const isFinishing = messages.length >= 11;
     
     let aiResponse = "";
     
-    if (isFinishing) {
-      aiResponse = "Thank you for the detailed responses. That concludes our adaptive interview. The panel is now synthesizing their thoughts and independent evaluations.";
-    } else if (process.env.FEATHERLESS_API_KEY && process.env.FEATHERLESS_API_KEY !== 'your_featherless_api_key_here') {
-      // System prompt for the adaptive interviewer
-      const systemMessage = {
-        role: "system" as const,
-        content: "You are an expert technical interviewer evaluating a candidate for a Senior Software Engineer position. Ask exactly ONE insightful follow-up question based on their previous answers. Be concise, direct, and slightly challenging. Do not break character."
-      };
-      
-      const formattedMessages = messages.map((m: any) => ({ 
-        role: m.role === "ai" ? "assistant" as const : "user" as const, 
-        content: m.content 
+    if (process.env.FEATHERLESS_API_KEY && process.env.FEATHERLESS_API_KEY !== 'your_featherless_api_key_here') {
+      const formattedMessages = messages.map((m: any) => ({
+        role: m.role === 'ai' ? 'assistant' : 'user',
+        content: m.content
       }));
+      
+      let systemInstruction = "You are the TalentLens AI interviewer evaluating a Senior Engineer. Ask deep, specific follow-up questions based on their previous answers. Ask only one question at a time. Be conversational but highly technical.";
+      
+      if (messages.length === 9) {
+         systemInstruction = "You are now Agent Ada, the cynical Risk Evaluator for this panel. The official interview is over. You must explicitly start by saying 'I am Agent Ada, the Risk Evaluator.' Then, identify ONE glaring weakness, missing edge case, or assumption in the candidate's previous technical answers in this transcript. Aggressively but professionally challenge them to defend that choice.";
+      } else if (messages.length >= 10 && isFinishing) {
+         systemInstruction = "You are Agent Ada. Acknowledge the candidate's defense concisely. Do not ask any more questions. State clearly that the interview is now fully concluded and the panel will make its final decision based on their defense.";
+      }
 
       const completion = await openai.chat.completions.create({
         model: "meta-llama/Meta-Llama-3.1-70B-Instruct",
-        messages: [systemMessage, ...formattedMessages],
+        messages: [{ role: "system", content: systemInstruction }, ...formattedMessages],
         max_tokens: 1000,
       });
       
       aiResponse = completion.choices[0]?.message?.content || "Could you elaborate further on that?";
     } else {
-      // Fallback mock
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const lastCandidateMessage = messages[messages.length - 1].content.toLowerCase();
-      if (lastCandidateMessage.includes("scale") || lastCandidateMessage.includes("performance")) {
-        aiResponse = "That's an interesting perspective on scaling. In terms of database performance, how did you handle potential bottlenecks like slow queries or connection limits under load?";
-      } else {
-        aiResponse = "I see. Could you dive deeper into the specific trade-offs you considered when choosing that particular architecture over the alternatives?";
-      }
+       if (messages.length === 9) {
+         aiResponse = "I am Agent Ada, the Risk Evaluator. I noticed you didn't mention database caching in your previous architecture rundown. How would you handle a sudden 10x read spike? Defend your architecture.";
+       } else if (messages.length >= 11) {
+         aiResponse = "Noted. Your defense has been recorded. The interview is now concluded, and the panel will deliberate.";
+       } else {
+         await new Promise(resolve => setTimeout(resolve, 2000));
+         aiResponse = "Mock: That's interesting. Could you dive deeper into that approach?";
+       }
     }
     
     return NextResponse.json({
