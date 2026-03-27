@@ -51,13 +51,13 @@ export default function ApplyPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-6 animate-fade-in-up">
-      <div className="mb-10 text-center">
-        <h1 className="text-4xl font-black tracking-tight mb-4 text-slate-900">Candidate <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Application</span></h1>
-        <p className="text-slate-600">Submit your real-world signals. We evaluate your potential, not just your past.</p>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 animate-fade-in-up">
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-3 sm:mb-4 text-slate-900">Candidate <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Application</span></h1>
+        <p className="text-slate-600 text-sm sm:text-base">Submit your real-world signals. We evaluate your potential, not just your past.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white premium-shadow rounded-3xl p-8 sm:p-10 space-y-8 border border-slate-200">
+      <form onSubmit={handleSubmit} className="bg-white premium-shadow rounded-2xl sm:rounded-3xl p-5 sm:p-10 space-y-8 border border-slate-200">
         <div className="space-y-6">
           <h2 className="text-xl font-semibold text-slate-900 border-b border-slate-200 pb-2">Basic Info</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

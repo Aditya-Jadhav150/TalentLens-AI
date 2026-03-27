@@ -115,32 +115,32 @@ export default function InterviewPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 h-[80vh] flex flex-col animate-fade-in-up">
-      <div className="mb-6 flex justify-between items-center bg-white border border-slate-200 rounded-2xl p-4 premium-shadow">
+    <div className="max-w-4xl mx-auto px-2 sm:px-4 h-[calc(100vh-8rem)] min-h-[500px] flex flex-col animate-fade-in-up">
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-start sm:justify-between items-start sm:items-center gap-3 sm:gap-0 bg-white border border-slate-200 rounded-2xl p-4 premium-shadow">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <span className="relative flex h-3 w-3">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
+            <span className="relative flex h-3 w-3 flex-shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
             </span>
             Adaptive Interview Session
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-mono">ID: {candidateId}</p>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-mono">ID: {candidateId}</p>
         </div>
         {interviewComplete && (
           <button 
             onClick={() => router.push(`/dashboard/${candidateId}`)}
-            className="px-6 py-2 bg-slate-900 text-white font-medium rounded-full premium-shadow hover:bg-slate-800 transition-all animate-pulse"
+            className="w-full sm:w-auto px-4 sm:px-6 py-2 text-sm sm:text-base bg-slate-900 text-white font-medium rounded-full premium-shadow hover:bg-slate-800 transition-all animate-pulse"
           >
             Review Evaluation Dashboard
           </button>
         )}
       </div>
 
-      <div className="flex-1 bg-slate-50 border border-slate-200 rounded-3xl p-6 overflow-y-auto mb-6 flex flex-col space-y-6 scrollbar-hide">
+      <div className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl sm:rounded-3xl p-3 sm:p-6 overflow-y-auto mb-4 sm:mb-6 flex flex-col space-y-4 sm:space-y-6 scrollbar-hide">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === "candidate" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] rounded-3xl p-5 ${
+            <div className={`max-w-[95%] sm:max-w-[85%] rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-sm sm:text-base ${
               msg.role === "candidate" ? "bg-slate-900 text-white rounded-tr-sm shadow-md" : 
               msg.isAgentAda ? "bg-amber-50 text-amber-900 rounded-tl-sm border border-amber-200 shadow-sm" :
               "bg-white text-slate-800 rounded-tl-sm border border-slate-200 shadow-sm"
@@ -173,13 +173,13 @@ export default function InterviewPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className="relative group">
+      <form onSubmit={handleSend} className="relative group shrink-0">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={interviewComplete || isTyping}
-          placeholder={interviewComplete ? "Interview complete. Please proceed to the dashboard." : "Type your response..."}
-          className="w-full bg-white border border-slate-300 rounded-2xl pl-6 pr-16 py-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-400 resize-none h-24 premium-shadow"
+          placeholder={interviewComplete ? "Interview complete. Review dashboard." : "Type your response..."}
+          className="w-full bg-white border border-slate-300 rounded-2xl pl-4 sm:pl-6 pr-28 py-3 sm:py-4 text-sm sm:text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-400 resize-none h-20 sm:h-24 premium-shadow"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); }
           }}
@@ -188,7 +188,7 @@ export default function InterviewPage() {
           type="button"
           onClick={toggleListening}
           disabled={interviewComplete || isTyping}
-          className={`absolute right-16 bottom-3 p-3 rounded-xl transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+          className={`absolute right-14 sm:right-16 bottom-2 sm:bottom-3 p-2 sm:p-3 rounded-xl transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           title="Toggle Voice Input"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -198,9 +198,9 @@ export default function InterviewPage() {
         <button 
           type="submit" 
           disabled={!input.trim() || interviewComplete || isTyping}
-          className="absolute right-3 bottom-3 p-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all"
+          className="absolute right-2 sm:right-3 bottom-2 sm:bottom-3 p-2 sm:p-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
           </svg>
         </button>
