@@ -14,6 +14,8 @@ export default function ApplyPage() {
     portfolio: "",
     achievements: "",
     problemSolving: "",
+    targetRole: "",
+    experienceLevel: "Mid-Level",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -36,6 +38,8 @@ export default function ApplyPage() {
       if (data.success) {
         if (typeof window !== "undefined") {
           window.localStorage.setItem('candidateProfile', data.profile);
+          window.localStorage.setItem('targetRole', formData.targetRole);
+          window.localStorage.setItem('experienceLevel', formData.experienceLevel);
           window.localStorage.removeItem('candidateTranscript');
         }
         router.push(`/interview/${data.candidateId}`);
@@ -68,6 +72,28 @@ export default function ApplyPage() {
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email Address</label>
               <input required type="email" id="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-400" placeholder="jane@example.com" />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold text-slate-900 border-b border-slate-200 pb-2">Target Position</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="targetRole" className="block text-sm font-medium text-slate-700">Job Role Applying For</label>
+              <input required type="text" id="targetRole" name="targetRole" value={formData.targetRole} onChange={handleChange} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-400" placeholder="e.g. Frontend Developer, Data Scientist" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="experienceLevel" className="block text-sm font-medium text-slate-700">Experience Level</label>
+              <select required id="experienceLevel" name="experienceLevel" value={formData.experienceLevel} onChange={(e: any) => handleChange(e)} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all appearance-none pr-10">
+                <option value="Junior">Junior (0-2 years)</option>
+                <option value="Mid-Level">Mid-Level (3-5 years)</option>
+                <option value="Senior">Senior (5-8 years)</option>
+                <option value="Lead/Staff">Lead / Staff (8+ years)</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none mt-[28px]">
+                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
             </div>
           </div>
         </div>
@@ -108,7 +134,7 @@ export default function ApplyPage() {
 
         <div className="pt-4">
           <button type="submit" disabled={isSubmitting} className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold text-lg hover:bg-slate-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center premium-shadow">
-            {isSubmitting ? "Processing Signals..." : "Submit & Start Adaptive Interview"}
+            {isSubmitting ? "Moving to Interview Round..." : "Submit & Start Adaptive Interview"}
           </button>
         </div>
       </form>

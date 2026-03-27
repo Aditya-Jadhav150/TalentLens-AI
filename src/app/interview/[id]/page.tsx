@@ -10,19 +10,32 @@ export default function InterviewPage() {
   const router = useRouter();
   const candidateId = params.id as string;
   
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "ai",
-      content: "Hello! I'm the TalentLens AI interviewer. Based on the complex technical problem you described in your application, could you explain the specific trade-offs you considered when choosing your approach?",
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [interviewComplete, setInterviewComplete] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [roleInfo, setRoleInfo] = useState({ targetRole: "", experienceLevel: "" });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const targetRole = window.localStorage.getItem("targetRole") || "Software Engineer";
+      const experienceLevel = window.localStorage.getItem("experienceLevel") || "";
+      setRoleInfo({ targetRole, experienceLevel });
+      
+      const targetPos = experienceLevel ? `${experienceLevel} ${targetRole}` : targetRole;
+      
+      setMessages([
+        {
+          id: "1",
+          role: "ai",
+          content: `Hello! I'm the TalentLens AI interviewer. We're excited you're applying for the ${targetPos} position. Based on the complex technical problem you described in your application, could you explain the specific trade-offs you considered when choosing your approach?`,
+        }
+      ]);
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,7 +97,11 @@ export default function InterviewPage() {
       const res = await fetch('/api/interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, userMessage] }),
+        body: JSON.stringify({ 
+          messages: [...messages, userMessage],
+          targetRole: roleInfo.targetRole,
+          experienceLevel: roleInfo.experienceLevel
+        }),
       });
       const data = await res.json();
       

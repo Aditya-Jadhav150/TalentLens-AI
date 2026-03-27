@@ -6,7 +6,8 @@ import { useEffect, useState, useRef } from "react";
 
 type Insight = { label: string; value: string; desc: string; };
 type Agent = { role: string; name: string; verdict: string; color: string; reasoning: string; };
-type DashboardData = { score: number; decision: string; insights: Insight[]; agents: Agent[]; };
+type Trajectory = { industryFit: string; skillGaps: string[]; careerPath: string; };
+type DashboardData = { score: number; decision: string; insights: Insight[]; agents: Agent[]; trajectory: Trajectory; };
 
 const getAgentStyles = (color: string) => {
   switch (color) {
@@ -22,6 +23,7 @@ export default function DashboardPage() {
   const candidateId = params.id as string;
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardData | null>(null);
+  const [targetPos, setTargetPos] = useState<string>("Software Engineer");
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -32,18 +34,48 @@ export default function DashboardPage() {
       try {
         let transcript = [];
         let profile = "";
+        let targetRole = "";
+        let experienceLevel = "";
         if (typeof window !== "undefined") {
           const locallySaved = window.localStorage.getItem('candidateTranscript');
           if (locallySaved) transcript = JSON.parse(locallySaved);
           profile = window.localStorage.getItem('candidateProfile') || "No profile available.";
+          targetRole = window.localStorage.getItem('targetRole') || "";
+          experienceLevel = window.localStorage.getItem('experienceLevel') || "";
+          
+          if (targetRole) {
+            setTargetPos(`${experienceLevel} ${targetRole}`);
+          }
         }
         const res = await fetch(`/api/decision?id=${candidateId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript, profile })
+          body: JSON.stringify({ transcript, profile, targetRole, experienceLevel })
         });
         const result = await res.json();
-        if (result.success) setData(result.data);
+        if (result.success) {
+          setData(result.data);
+          
+          if (typeof window !== "undefined") {
+            try {
+              const history = JSON.parse(window.localStorage.getItem('dashboardHistory') || '[]');
+              const exists = history.find((h: any) => h.id === candidateId);
+              if (!exists) {
+                history.unshift({
+                  id: candidateId,
+                  role: targetRole,
+                  level: experienceLevel,
+                  score: result.data.score,
+                  decision: result.data.decision,
+                  date: new Date().toISOString()
+                });
+                window.localStorage.setItem('dashboardHistory', JSON.stringify(history.slice(0, 50)));
+              }
+            } catch (e) {
+              console.error("Failed to save history", e);
+            }
+          }
+        }
       } catch (error) {
         console.error("Failed to load dashboard data");
       } finally {
@@ -75,6 +107,7 @@ export default function DashboardPage() {
             <span className="text-slate-500 font-mono text-xs">ID: {candidateId}</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Panel <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Decision</span></h1>
+          <p className="text-lg text-slate-600 mt-2 font-medium">For: <span className="text-blue-700 font-bold">{targetPos}</span></p>
         </div>
 
         <div className="flex items-center gap-6 bg-white px-8 py-5 rounded-3xl premium-shadow border border-slate-200">
@@ -99,6 +132,44 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-600 leading-relaxed">{insight.desc}</p>
           </div>
         ))}
+      </div>
+
+      <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b border-slate-200 pb-4 relative z-10">Industry Fit & Career Trajectory</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16 relative z-10">
+        <div className="bg-slate-900 rounded-3xl p-6 md:p-8 border border-slate-800 premium-shadow text-white">
+          <div className="flex items-center gap-3 mb-4">
+             <div className="p-2 bg-blue-500/20 rounded-lg">
+                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+             </div>
+             <h3 className="text-xl font-bold tracking-tight">Market Alignment</h3>
+          </div>
+          <p className="text-slate-300 leading-relaxed font-medium">{data.trajectory.industryFit}</p>
+          
+          <div className="mt-6 pt-6 border-t border-slate-800">
+             <h4 className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-3">Projected Trajectory</h4>
+             <p className="text-amber-300 tracking-wide font-medium">{data.trajectory.careerPath}</p>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 premium-shadow">
+          <div className="flex items-center gap-3 mb-4">
+             <div className="p-2 bg-red-50 rounded-lg">
+                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+             </div>
+             <h3 className="text-xl font-bold text-slate-900 tracking-tight">Identified Skill Gaps</h3>
+          </div>
+          <ul className="space-y-3 mt-4">
+            {data.trajectory.skillGaps.map((gap, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-red-400 mt-2"></span>
+                <span className="text-slate-600 font-medium">{gap}</span>
+              </li>
+            ))}
+            {data.trajectory.skillGaps.length === 0 && (
+              <li className="text-slate-500 italic">No significant skill gaps identified for this level.</li>
+            )}
+          </ul>
+        </div>
       </div>
 
       <h2 className="text-2xl font-bold text-slate-900 mb-6 border-b border-slate-200 pb-4 flex items-center gap-3 relative z-10">

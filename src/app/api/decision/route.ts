@@ -11,7 +11,9 @@ export async function POST(req: Request) {
     const { searchParams } = new URL(req.url);
     const candidateId = searchParams.get('id');
     const body = await req.json();
-    const { transcript, profile } = body;
+    const { transcript, profile, targetRole, experienceLevel } = body;
+
+    const targetPos = targetRole ? `${experienceLevel} ${targetRole}` : "Software Engineer";
 
     if (!candidateId) {
       return NextResponse.json({ success: false, error: "Missing candidate ID" }, { status: 400 });
@@ -22,7 +24,7 @@ export async function POST(req: Request) {
       : "Candidate provided no interview responses.";
       
     const basePrompt = `
-      You are an elite multi-agent AI hiring committee evaluating a candidate for a Senior Software Engineer position.
+      You are an elite multi-agent AI hiring committee evaluating a candidate for a ${targetPos} position.
       Below is the candidate's active Git/Portfolio profile signals AND their actual interview transcript.
       
       [CANDIDATE BASE PROFILE & GITHUB SIGNALS]
@@ -31,7 +33,8 @@ export async function POST(req: Request) {
       [INTERVIEW TRANSCRIPT]
       ${conversationStr}
       
-      You must evaluate the candidate's answers and their profile signals deeply. Note where they show insight, and where they gave generic or weak answers.
+      You must evaluate the candidate's answers and their profile signals deeply against the specific requirements and industry standards for a ${targetPos}.
+      Note where they show insight, and where they gave generic or weak answers.
       Respond with ONLY a valid JSON object matching this exact shape (no markdown, no backticks, just raw JSON):
       {
         "score": <number 0-100 reflecting their true performance based on transcript depth>,
@@ -41,6 +44,11 @@ export async function POST(req: Request) {
           { "label": "Problem Solving", "value": "<High/Medium/Low>", "desc": "<1 punchy sentence evaluating their specific problem solving approach>" },
           { "label": "Communication", "value": "<High/Medium/Low>", "desc": "<1 punchy sentence evaluating how clearly they articulated complex ideas>" }
         ],
+        "trajectory": {
+          "industryFit": "<2 sentences explaining how their current skills map to the industry standard for a ${targetPos}>",
+          "skillGaps": ["<specific skill 1>", "<specific skill 2>", "<specific skill 3>"],
+          "careerPath": "<1 sentence predicting their trajectory if hired in this role>"
+        },
         "agents": [
           {
             "role": "Technical Lead",
@@ -103,14 +111,18 @@ export async function POST(req: Request) {
           decision: "STRONG HIRE",
           insights: [
             { label: "Technical Depth", value: "High", desc: "Mock evaluation without API key." },
-            { label: "Problem Solving", value: "High", desc: "Mock evaluation without API key." },
-            { label: "Communication", value: "High", desc: "Mock evaluation without API key." }
+            { label: "Problem Solving", value: "High", desc: "Mock evaluation without API key." }
           ],
           agents: [
             { role: "Technical Lead", name: "Agent Alan", verdict: "Hire", color: "blue", reasoning: "Mock reasoning." },
             { role: "Culture & Product", name: "Agent Grace", verdict: "Hire", color: "purple", reasoning: "Mock reasoning." },
             { role: "Risk Evaluator", name: "Agent Ada", verdict: "Hire", color: "amber", reasoning: "Mock reasoning." }
-          ]
+          ],
+          trajectory: {
+            industryFit: "The candidate's technical background strongly aligns with modern standards for a " + targetPos + ". They demonstrate a solid understanding of core principles required at this level.",
+            skillGaps: ["Advanced System Design", "Performance Profiling", "Cross-team Leadership"],
+            careerPath: "Potential to grow into a senior leadership position within 2-3 years."
+          }
         }
       });
     }
